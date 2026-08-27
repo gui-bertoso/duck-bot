@@ -46,5 +46,23 @@ export async function setupGuild(guild) {
     });
   }
 
+  let tribunalChannel = guild.channels.cache.find(
+    (channel) => channel.name === 'tribunal' && channel.type === ChannelType.GuildText,
+  );
+  if (!tribunalChannel) {
+    const staffOverwrites = guild.roles.cache
+      .filter((role) => role.permissions.has(PermissionFlagsBits.ModerateMembers))
+      .map((role) => ({ id:role.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.ReadMessageHistory] }));
+    tribunalChannel = await guild.channels.create({
+      name: 'tribunal', type: ChannelType.GuildText,
+      topic: 'Casos e votações da equipe de moderação.',
+      permissionOverwrites: [
+        { id:guild.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel] },
+        { id:me.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.EmbedLinks] },
+        ...staffOverwrites,
+      ], reason:'Tribunal do Duck Bot',
+    });
+  }
+
   return logChannel;
 }

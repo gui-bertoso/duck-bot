@@ -1,5 +1,6 @@
 import {
   ApplicationCommandOptionType,
+  ChannelType,
   PermissionFlagsBits,
 } from 'discord.js';
 
@@ -86,6 +87,7 @@ export const commands = [
         choices: [
           { name: 'Inocente', value: 'inocente' },
           { name: 'Advertência', value: 'advertencia' },
+          { name: 'Timeout de 24 horas', value: 'timeout' },
           { name: 'Banido', value: 'banido' },
         ],
       },
@@ -163,6 +165,26 @@ export const commands = [
       required: true,
     }, reasonOption()],
   },
+  {
+    name: 'config', description: 'Configura a proteção do Duck Bot.',
+    defaultMemberPermissions: PermissionFlagsBits.ManageGuild.toString(),
+    options: [
+      { name:'automod',description:'Define o nível da moderação automática.',type:ApplicationCommandOptionType.Subcommand,options:[{name:'nivel',description:'Intensidade.',type:ApplicationCommandOptionType.String,required:true,choices:[{name:'Leve',value:'leve'},{name:'Normal',value:'normal'},{name:'Rígido',value:'rigido'}]}]},
+      { name:'dominio',description:'Adiciona ou remove um domínio confiável.',type:ApplicationCommandOptionType.Subcommand,options:[{name:'acao',description:'Ação.',type:ApplicationCommandOptionType.String,required:true,choices:[{name:'Adicionar',value:'adicionar'},{name:'Remover',value:'remover'}]},{name:'dominio',description:'Exemplo: exemplo.com',type:ApplicationCommandOptionType.String,required:true}]},
+      { name:'excecao-canal',description:'Alterna a exceção de automod para um canal.',type:ApplicationCommandOptionType.Subcommand,options:[{name:'canal',description:'Canal.',type:ApplicationCommandOptionType.Channel,required:true,channelTypes:[ChannelType.GuildText]}]},
+      { name:'excecao-cargo',description:'Alterna a exceção de automod para um cargo.',type:ApplicationCommandOptionType.Subcommand,options:[{name:'cargo',description:'Cargo.',type:ApplicationCommandOptionType.Role,required:true}]},
+      { name:'boas-vindas',description:'Define a mensagem de boas-vindas.',type:ApplicationCommandOptionType.Subcommand,options:[{name:'mensagem',description:'Use {user} e {server}.',type:ApplicationCommandOptionType.String,required:true,maxLength:500}]},
+    ],
+  },
+  {name:'lockdown',description:'Ativa ou desativa a proteção máxima contra raids.',defaultMemberPermissions:PermissionFlagsBits.ManageGuild.toString(),options:[{name:'ativo',description:'Estado do lockdown.',type:ApplicationCommandOptionType.Boolean,required:true}]},
+  {name:'perfil',description:'Mostra a situação disciplinar de um membro.',options:[{name:'membro',description:'Membro; deixe vazio para ver você.',type:ApplicationCommandOptionType.User,required:false}]},
+  {name:'userinfo',description:'Mostra informações de um membro.',options:[{name:'membro',description:'Membro consultado.',type:ApplicationCommandOptionType.User,required:false}]},
+  {name:'serverinfo',description:'Mostra informações deste servidor.'},
+  {name:'denunciar',description:'Envia uma denúncia privada à moderação.',options:[{name:'membro',description:'Membro denunciado.',type:ApplicationCommandOptionType.User,required:true},{name:'motivo',description:'Descreva o ocorrido.',type:ApplicationCommandOptionType.String,required:true,maxLength:1000}]},
+  {name:'painel',description:'Publica o painel interativo do Duck Bot.',defaultMemberPermissions:PermissionFlagsBits.ManageGuild.toString()},
+  {name:'relatorio',description:'Exibe a auditoria recente de um membro.',defaultMemberPermissions:PermissionFlagsBits.ModerateMembers.toString(),options:[{name:'membro',description:'Membro consultado.',type:ApplicationCommandOptionType.User,required:true}]},
+  {name:'limpar-warnings',description:'Expira warnings que passaram do prazo.',defaultMemberPermissions:PermissionFlagsBits.ManageGuild.toString()},
+  {name:'backup',description:'Cria um backup local do banco de dados.',defaultMemberPermissions:PermissionFlagsBits.Administrator.toString()},
 ];
 
 function memberAndReasonOptions() {

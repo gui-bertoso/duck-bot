@@ -4,3 +4,5 @@ npm-debug.log*
 data/tribunal.json
 data/bans.json
 data/warnings.json
+data/duck-bot.db*
+backups/
