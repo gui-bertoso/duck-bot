@@ -1,0 +1,6 @@
+node_modules/
+.env
+npm-debug.log*
+data/tribunal.json
+data/bans.json
+data/warnings.json
