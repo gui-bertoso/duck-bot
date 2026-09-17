@@ -9,8 +9,10 @@
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
-    "test": "node --test",
-    "check": "node --test && node --check src/index.js && node --check src/commands.js"
+    "test": "node --test --test-concurrency=1",
+    "check": "node --test --test-concurrency=1 && node --check src/index.js && node --check src/commands.js && prettier --check .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": ">=22.5"
@@ -18,5 +20,8 @@
   "dependencies": {
     "discord.js": "^14.19.3",
     "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6"
   }
 }

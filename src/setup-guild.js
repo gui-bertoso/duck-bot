@@ -1,10 +1,9 @@
-import {
-  ChannelType,
-  PermissionFlagsBits,
-} from 'discord.js';
+import { ChannelType, PermissionFlagsBits } from 'discord.js';
+import { getSettings } from './database.js';
 
 export async function setupGuild(guild) {
-  const me = guild.members.me ?? await guild.members.fetchMe();
+  const me = guild.members.me ?? (await guild.members.fetchMe());
+  const settings = getSettings(guild.id);
 
   let botRole = guild.roles.cache.find((role) => role.name === 'Bot');
   if (!botRole) {
@@ -19,9 +18,11 @@ export async function setupGuild(guild) {
     await me.roles.add(botRole, 'Cargo padrão do Duck Bot');
   }
 
-  let logChannel = guild.channels.cache.find(
-    (channel) => channel.name === 'log-bot' && channel.type === ChannelType.GuildText,
-  );
+  let logChannel =
+    guild.channels.cache.get(settings.logChannelId) ??
+    guild.channels.cache.find(
+      (channel) => channel.name === 'log-bot' && channel.type === ChannelType.GuildText,
+    );
 
   if (!logChannel) {
     logChannel = await guild.channels.create({
@@ -46,21 +47,39 @@ export async function setupGuild(guild) {
     });
   }
 
-  let tribunalChannel = guild.channels.cache.find(
-    (channel) => channel.name === 'tribunal' && channel.type === ChannelType.GuildText,
-  );
+  let tribunalChannel =
+    guild.channels.cache.get(settings.tribunalChannelId) ??
+    guild.channels.cache.find(
+      (channel) => channel.name === 'tribunal' && channel.type === ChannelType.GuildText,
+    );
   if (!tribunalChannel) {
     const staffOverwrites = guild.roles.cache
       .filter((role) => role.permissions.has(PermissionFlagsBits.ModerateMembers))
-      .map((role) => ({ id:role.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.ReadMessageHistory] }));
+      .map((role) => ({
+        id: role.id,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+        ],
+      }));
     tribunalChannel = await guild.channels.create({
-      name: 'tribunal', type: ChannelType.GuildText,
+      name: 'tribunal',
+      type: ChannelType.GuildText,
       topic: 'Casos e votações da equipe de moderação.',
       permissionOverwrites: [
-        { id:guild.roles.everyone.id,deny:[PermissionFlagsBits.ViewChannel] },
-        { id:me.id,allow:[PermissionFlagsBits.ViewChannel,PermissionFlagsBits.SendMessages,PermissionFlagsBits.EmbedLinks] },
+        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+        {
+          id: me.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+          ],
+        },
         ...staffOverwrites,
-      ], reason:'Tribunal do Duck Bot',
+      ],
+      reason: 'Tribunal do Duck Bot',
     });
   }
 

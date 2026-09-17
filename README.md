@@ -18,7 +18,7 @@ Bot moderador para Discord, feito com Node.js e discord.js.
 - cadastro persistente de banidos com motivo, moderador e datas de ban/desban;
 - consulta em `/banidos` e desbanimento auditado com `/desbanir`.
 - dossiê com até 30 mensagens anteriores ao ban, consultável em `/historico-ban`.
-- warnings persistentes com confirmação por botão e escalada após reincidências;
+- warnings persistentes com pontuação e punição progressiva após reincidências;
 - comandos `/avisar`, `/avisos` e `/remover-aviso` para a equipe.
 - SQLite com migração automática dos JSON antigos e backup diário;
 - automod leve, normal ou rígido, com exceções por canal, cargo e domínio;
@@ -26,6 +26,13 @@ Bot moderador para Discord, feito com Node.js e discord.js.
 - tribunal privado com provas, votos, timeout, ban e arquivamento em sete dias;
 - auditoria de mensagens, cargos, apelidos, canais, entradas e bans externos;
 - painel interativo, perfis disciplinares, informações e denúncias sigilosas.
+- logger padronizado com horário e nível no terminal, espelhado em embeds no `log-bot`.
+- dupla proteção de comandos sensíveis: permissões nativas do Discord e validação interna auditada.
+- denúncias de voz com limiar de usuários únicos e revisão urgente pela equipe, sem punição automática;
+- cargos de apoiador para Twitch Sub, membro e inscrito do YouTube, concedidos pela equipe;
+- histórico recente persistente, com retenção configurável e limpeza automática;
+- `/diagnostico` para verificar permissões, canais, banco e hierarquia de cargos;
+- métricas de memória, comandos, erros e ações de moderação em `/status`;
 
 ## Executar
 
@@ -44,19 +51,26 @@ O token nunca deve ser enviado ao Git ou compartilhado com outras pessoas.
 
 Os domínios aceitos são configurados em `ALLOWED_DOMAINS`. O filtro não decide se
 um site é seguro: todo domínio que não estiver nessa lista será enviado para análise.
-O histórico começa quando o bot é ligado e só é gravado permanentemente quando um
-caso é aberto ou alguém é banido.
+O histórico recente é persistido no SQLite para sobreviver a reinícios. Por padrão,
+ele é retido por 30 dias e limitado às 30 mensagens mais recentes de cada membro.
 
 ## Configuração no Discord
 
-- `comandos-bot`: central dos comandos e painéis;
+- `controle-bot` (ou `comandos-bot`): central dos comandos e painéis;
 - `log-bot`: criado automaticamente e usado para auditoria;
 - `tribunal`: criado automaticamente e visível à equipe com permissão de moderação;
 - `boas-vindas`: opcional, recebe a mensagem configurada em `/config boas-vindas`.
 
-Use `/config automod`, `/config dominio`, `/config excecao-canal` e
-`/config excecao-cargo` para ajustar as regras. `/lockdown` controla a proteção
-máxima. Warnings expiram em 30 dias por padrão e três pontos abrem um caso.
+Use `/config automod`, `/config dominio`, `/config excecao-canal`,
+`/config excecao-cargo`, `/config avisos`, `/config retencao` e `/config canal`
+para ajustar as regras. `/lockdown` controla a proteção máxima. Warnings expiram
+em 30 dias por padrão e três pontos abrem um caso.
 
 O banco fica em `data/duck-bot.db`; cópias diárias ficam em `backups/`. Esses
 arquivos contêm dados de moderação e não devem ser publicados.
+
+`BOT_STATUS` controla a presença: `online`, `idle`, `dnd` ou `invisible`.
+
+Eventos operacionais como inicialização, warnings, falhas de conexão, backups e
+encerramento são enviados ao `log-bot`. Por segurança, stacks técnicos completos
+permanecem somente no terminal local.
