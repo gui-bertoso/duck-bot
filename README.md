@@ -2,6 +2,10 @@
 
 Bot moderador para Discord, feito com Node.js e discord.js.
 
+Projeto independente e gratuito sob licença MIT. Cada pessoa executa sua própria
+instância no computador ou servidor que escolher, usando seu próprio aplicativo
+e token do Discord. Não há assinatura, conta do autor ou backend comercial.
+
 ## Recursos
 
 - cria automaticamente o cargo `Bot` e atribui ao próprio Duck Bot;
@@ -74,3 +78,19 @@ arquivos contêm dados de moderação e não devem ser publicados.
 Eventos operacionais como inicialização, warnings, falhas de conexão, backups e
 encerramento são enviados ao `log-bot`. Por segurança, stacks técnicos completos
 permanecem somente no terminal local.
+
+## Execução independente e privacidade
+
+Crie seu próprio aplicativo no Discord Developer Portal, adicione o bot ao seu
+servidor e habilite os intents de membros e conteúdo de mensagens usados pelo bot.
+Preencha apenas o `.env` local com as credenciais desse aplicativo. Não compartilhe
+esses valores em issues, capturas de tela ou commits.
+
+Os dados de moderação ficam no SQLite local, com cópias em `backups/`. O bot se
+conecta à API do Discord para funcionar e envia registros aos canais configurados
+do servidor; não envia dados para um servidor do autor. Revise retenção, permissões
+e acesso aos canais de auditoria antes de usar com membros reais.
+
+## Licença
+
+[MIT](LICENSE), para o código do projeto. As dependências mantêm suas próprias licenças.

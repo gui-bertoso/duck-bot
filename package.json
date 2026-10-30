@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@11.19.0",
-  "description": "Bot moderador para Discord",
+  "description": "Bot moderador independente para Discord, executado pelo próprio usuário",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
@@ -23,5 +23,6 @@
   },
   "devDependencies": {
     "prettier": "^3.9.6"
-  }
+  },
+  "license": "MIT"
 }
