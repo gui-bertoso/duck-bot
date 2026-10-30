@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   raidWindowSeconds: 20,
   minimumAccountAgeDays: 3,
   lockdown: false,
-  welcomeMessage: 'Bem-vindo(a), {user}, ao {server}! 🦆',
+  welcomeMessage: 'Welcome, {user}, to {server}! 🦆',
   exemptRoleIds: [],
   exemptChannelIds: [],
   allowedDomains: [],

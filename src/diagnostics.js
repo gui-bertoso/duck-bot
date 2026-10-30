@@ -2,16 +2,16 @@ import { PermissionFlagsBits } from 'discord.js';
 import { db, getSettings } from './database.js';
 
 const REQUIRED_PERMISSIONS = [
-  ['Ver canais', PermissionFlagsBits.ViewChannel],
-  ['Enviar mensagens', PermissionFlagsBits.SendMessages],
+  ['View channels', PermissionFlagsBits.ViewChannel],
+  ['Send messages', PermissionFlagsBits.SendMessages],
   ['Inserir links', PermissionFlagsBits.EmbedLinks],
-  ['Histórico de mensagens', PermissionFlagsBits.ReadMessageHistory],
-  ['Gerenciar mensagens', PermissionFlagsBits.ManageMessages],
-  ['Moderar membros', PermissionFlagsBits.ModerateMembers],
-  ['Expulsar membros', PermissionFlagsBits.KickMembers],
-  ['Banir membros', PermissionFlagsBits.BanMembers],
-  ['Gerenciar cargos', PermissionFlagsBits.ManageRoles],
-  ['Ensurdecer membros', PermissionFlagsBits.DeafenMembers],
+  ['Message history', PermissionFlagsBits.ReadMessageHistory],
+  ['Manage messages', PermissionFlagsBits.ManageMessages],
+  ['Moderate members', PermissionFlagsBits.ModerateMembers],
+  ['Kick members', PermissionFlagsBits.KickMembers],
+  ['Ban members', PermissionFlagsBits.BanMembers],
+  ['Manage roles', PermissionFlagsBits.ManageRoles],
+  ['Deafen members', PermissionFlagsBits.DeafenMembers],
 ];
 
 export function diagnoseGuild(guild) {
@@ -50,8 +50,8 @@ export function diagnoseGuild(guild) {
   );
   const failures = [
     ...permissions.filter((item) => !item.ok).map((item) => item.name),
-    ...channels.filter((item) => !item.ok).map((item) => `canal #${item.name}`),
-    ...(!databaseOk ? ['banco de dados'] : []),
+    ...channels.filter((item) => !item.ok).map((item) => `channel #${item.name}`),
+    ...(!databaseOk ? ['database'] : []),
   ];
 
   return { permissions, channels, databaseOk, rolePositionOk, failures };
@@ -63,7 +63,7 @@ export function formatDiagnostic(result) {
     permissions: result.permissions.map(line).join('\n'),
     channels: result.channels.map(line).join('\n'),
     summary: result.failures.length
-      ? `⚠️ ${result.failures.length} problema(s) encontrado(s).`
-      : '✅ O Duck Bot está pronto para moderar.',
+      ? `⚠️ ${result.failures.length} issue(s) found.`
+      : '✅ Duck Bot is ready to moderate.',
   };
 }

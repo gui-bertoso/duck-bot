@@ -1,6 +1,6 @@
 export function decideAutomaticAction({ points, violation, threshold = 3 }) {
   if (violation.type === 'phishing' && violation.severity >= 5) {
-    return { type: 'ban', label: 'banimento imediato', tribunal: true };
+    return { type: 'ban', label: 'immediate ban', tribunal: true };
   }
 
   if (points >= threshold + 2) {
@@ -8,7 +8,7 @@ export function decideAutomaticAction({ points, violation, threshold = 3 }) {
   }
 
   if (points >= threshold) {
-    return { type: 'timeout', minutes: 10, label: 'timeout de 10 minutos', tribunal: true };
+    return { type: 'timeout', minutes: 10, label: '10-minute timeout', tribunal: true };
   }
 
   return { type: 'warning', label: 'warning', tribunal: false };

@@ -56,8 +56,8 @@ export function getCase(id) {
 }
 export async function voteCase(caseId, judgeId, verdict, reason) {
   const item = getCase(caseId);
-  if (!item || item.status !== 'queued') throw new Error('Este caso não está aberto para votação.');
-  if (item.userId === judgeId) throw new Error('O acusado não pode votar no próprio caso.');
+  if (!item || item.status !== 'queued') throw new Error('This case is not open for voting.');
+  if (item.userId === judgeId) throw new Error('The accused cannot vote on their own case.');
 
   db.prepare(
     'INSERT INTO tribunal_votes VALUES(?,?,?,?,?) ON CONFLICT(case_id,judge_id) DO UPDATE SET verdict=excluded.verdict,reason=excluded.reason,created_at=excluded.created_at',

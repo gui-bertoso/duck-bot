@@ -10,12 +10,12 @@ export async function setupGuild(guild) {
     botRole = await guild.roles.create({
       name: 'Bot',
       color: 0xf4c430,
-      reason: 'Configuração automática do Duck Bot',
+      reason: 'Automatic Duck Bot setup',
     });
   }
 
   if (!me.roles.cache.has(botRole.id)) {
-    await me.roles.add(botRole, 'Cargo padrão do Duck Bot');
+    await me.roles.add(botRole, 'Default Duck Bot role');
   }
 
   let logChannel =
@@ -28,7 +28,7 @@ export async function setupGuild(guild) {
     logChannel = await guild.channels.create({
       name: 'log-bot',
       type: ChannelType.GuildText,
-      topic: 'Registros automáticos do Duck Bot.',
+      topic: 'Automatic Duck Bot logs.',
       permissionOverwrites: [
         {
           id: guild.roles.everyone.id,
@@ -43,7 +43,7 @@ export async function setupGuild(guild) {
           ],
         },
       ],
-      reason: 'Canal de registros do Duck Bot',
+      reason: 'Duck Bot log channel',
     });
   }
 
@@ -66,7 +66,7 @@ export async function setupGuild(guild) {
     tribunalChannel = await guild.channels.create({
       name: 'tribunal',
       type: ChannelType.GuildText,
-      topic: 'Casos e votações da equipe de moderação.',
+      topic: 'Cases and votes for the moderation team.',
       permissionOverwrites: [
         { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
         {
@@ -79,7 +79,7 @@ export async function setupGuild(guild) {
         },
         ...staffOverwrites,
       ],
-      reason: 'Tribunal do Duck Bot',
+      reason: 'Duck Bot tribunal',
     });
   }
 

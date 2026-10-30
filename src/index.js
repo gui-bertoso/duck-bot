@@ -59,7 +59,7 @@ import { getMetrics, incrementMetric } from './metrics.js';
 import { diagnoseGuild, formatDiagnostic } from './diagnostics.js';
 
 if (!process.env.DISCORD_TOKEN) {
-  throw new Error('A variável DISCORD_TOKEN não foi configurada.');
+  throw new Error('The DISCORD_TOKEN variable is not configured.');
 }
 
 initializeTerminal();
@@ -84,8 +84,8 @@ await loadWarnings();
 
 client.once(Events.ClientReady, async (readyClient) => {
   readyClient.user.setPresence({ status: botStatus, activities: [] });
-  terminalLog('success', `Duck Bot conectado como ${readyClient.user.tag}`);
-  terminalLog('info', `Presença configurada como ${botStatus}`);
+  terminalLog('success', `Duck Bot connected as ${readyClient.user.tag}`);
+  terminalLog('info', `Presence configured as ${botStatus}`);
 
   for (const guild of readyClient.guilds.cache.values()) {
     await configureGuild(guild);
@@ -96,15 +96,15 @@ client.on(Events.GuildCreate, configureGuild);
 
 client.on(Events.GuildMemberAdd, async (member) => {
   await addVisitorRole(member).catch((error) =>
-    terminalLog('warning', `Não foi possível atribuir Visitante a ${member.user.tag}`, error),
+    terminalLog('warning', `Could not assign Visitor to ${member.user.tag}`, error),
   );
   const { raid, count, settings } = registerJoin(member);
   if (raid && !settings.lockdown) {
     setLockdown(member.guild.id, true);
     await sendLog(
       member.guild,
-      '🚨 Raid detectada',
-      `${count} entradas em ${settings.raidWindowSeconds}s. Lockdown ativado automaticamente.`,
+      '🚨 Raid detected',
+      `${count} joins in ${settings.raidWindowSeconds}s. Lockdown enabled automatically.`,
       0xed4245,
     );
   }
@@ -113,12 +113,10 @@ client.on(Events.GuildMemberAdd, async (member) => {
     (current.lockdown || accountIsNew(member, current.minimumAccountAgeDays)) &&
     member.moderatable
   ) {
-    await member.timeout(60 * 60_000, 'Verificação anti-raid do Duck Bot');
+    await member.timeout(60 * 60_000, 'Duck Bot anti-raid verification');
     await sendVerificationDm(member);
   }
-  const welcome = member.guild.channels.cache.find(
-    (c) => c.name === 'boas-vindas' && c.isTextBased(),
-  );
+  const welcome = member.guild.channels.cache.find((c) => c.name === 'welcome' && c.isTextBased());
   if (welcome)
     await welcome
       .send(
@@ -130,12 +128,12 @@ client.on(Events.GuildMemberAdd, async (member) => {
   audit(member.guild.id, 'member_join', member.id, {
     accountCreatedAt: member.user.createdAt.toISOString(),
   });
-  await sendLog(member.guild, 'Membro entrou', `${member.user.tag} entrou no servidor.`, 0x57f287);
+  await sendLog(member.guild, 'Member joined', `${member.user.tag} joined the server.`, 0x57f287);
 });
 
 client.on(Events.GuildMemberRemove, async (member) => {
   audit(member.guild.id, 'member_leave', member.id, {});
-  await sendLog(member.guild, 'Membro saiu', `${member.user.tag} saiu do servidor.`, 0xed4245);
+  await sendLog(member.guild, 'Member left', `${member.user.tag} left the server.`, 0xed4245);
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -163,7 +161,7 @@ client.on(Events.MessageCreate, async (message) => {
     incrementMetric('automaticWarnings');
     await sendWarningDm(message.author, message.guild, warning, activeCount);
     const threshold = getSettings(message.guild.id).warningThreshold;
-    terminalLog('security', 'Mensagem removida e warning automático aplicado', null, {
+    terminalLog('security', 'Message removed and automatic warning issued', null, {
       servidor: message.guild.name,
       usuario: message.author.tag,
       canal: message.channel.name,
@@ -172,8 +170,8 @@ client.on(Events.MessageCreate, async (message) => {
     });
     await sendLog(
       message.guild,
-      'Mensagem removida e warning aplicado',
-      `**Membro:** ${message.author.tag}\n**Motivo:** ${violation.reason}\n**Avisos ativos:** ${activeCount}/${threshold}`,
+      'Message removed and warning issued',
+      `**Member:** ${message.author.tag}\n**Reason:** ${violation.reason}\n**Active warnings:** ${activeCount}/${threshold}`,
       0xfee75c,
       false,
     );
@@ -182,7 +180,7 @@ client.on(Events.MessageCreate, async (message) => {
     if (!action.tribunal) return;
 
     if (action.type === 'ban' && message.member.bannable) {
-      await message.member.ban({ reason: `Proteção automática: ${violation.reason}` });
+      await message.member.ban({ reason: `Automatic protection: ${violation.reason}` });
       await registerBan({
         guildId: message.guild.id,
         userId: message.author.id,
@@ -195,7 +193,7 @@ client.on(Events.MessageCreate, async (message) => {
     } else if (action.type === 'timeout' && message.member.moderatable) {
       await message.member.timeout(
         action.minutes * 60_000,
-        `${activeCount} pontos ativos: ${violation.reason}`,
+        `${activeCount} active points: ${violation.reason}`,
       );
     }
 
@@ -211,12 +209,12 @@ client.on(Events.MessageCreate, async (message) => {
     await postTribunalPanel(message.guild, item, message.author);
     await sendLog(
       message.guild,
-      'Caso enviado ao tribunal',
-      `**Acusado:** ${message.author.tag}\n**Detecção:** ${violation.reason}\n**Pontuação:** ${activeCount}\n**Ação preventiva:** ${action.label}\n**Caso:** ${item.id}`,
+      'Case sent to the tribunal',
+      `**Accused:** ${message.author.tag}\n**Detection:** ${violation.reason}\n**Score:** ${activeCount}\n**Preventive action:** ${action.label}\n**Case:** ${item.id}`,
       0xed4245,
     );
   } catch (error) {
-    await systemLog(message.guild, 'error', 'Falha no filtro automático', error);
+    await systemLog(message.guild, 'error', 'Automatic filter failed', error);
   }
 });
 
@@ -235,7 +233,7 @@ client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
       guildId: newMessage.guild.id,
       userId: newMessage.author.id,
       userTag: newMessage.author.tag,
-      reason: `Mensagem editada: ${violation.reason}`,
+      reason: `Edited message: ${violation.reason}`,
       moderatorId: client.user.id,
       source: 'automatico',
       message: newMessage.content?.slice(0, 1000),
@@ -244,8 +242,8 @@ client.on(Events.MessageUpdate, async (oldMessage, newMessage) => {
     await sendWarningDm(newMessage.author, newMessage.guild, result.warning, result.activeCount);
     await sendLog(
       newMessage.guild,
-      'Mensagem editada removida e warning aplicado',
-      `**Membro:** ${newMessage.author.tag}\n**Motivo:** ${violation.reason}\n**Avisos ativos:** ${result.activeCount}`,
+      'Edited message removed and warning issued',
+      `**Member:** ${newMessage.author.tag}\n**Reason:** ${violation.reason}\n**Active warnings:** ${result.activeCount}`,
       0xfee75c,
     );
   }
@@ -286,20 +284,20 @@ client.on(Events.GuildBanAdd, async (ban) => {
       guildId: ban.guild.id,
       userId: ban.user.id,
       userTag: ban.user.tag,
-      reason: ban.reason ?? 'Banimento externo/manual',
+      reason: ban.reason ?? 'External/manual ban',
       moderatorId: null,
       source: 'discord',
       messageHistory: getMessageHistory(ban.guild.id, ban.user.id),
     });
-    terminalLog('moderation', 'Banimento externo detectado', null, {
+    terminalLog('moderation', 'External ban detected', null, {
       servidor: ban.guild.name,
       usuario: ban.user.tag,
-      motivo: ban.reason ?? 'Não informado',
+      motivo: ban.reason ?? 'Not provided',
     });
     await sendLog(
       ban.guild,
-      'Banimento detectado',
-      `**Usuário:** ${ban.user.tag} (${ban.user.id})\n**Motivo:** ${ban.reason ?? 'Não informado'}\n**Origem:** ação externa/manual`,
+      'Ban detected',
+      `**User:** ${ban.user.tag} (${ban.user.id})\n**Reason:** ${ban.reason ?? 'Not provided'}\n**Source:** external/manual action`,
       0xed4245,
       false,
     );
@@ -308,15 +306,15 @@ client.on(Events.GuildBanAdd, async (ban) => {
 client.on(Events.GuildBanRemove, async (ban) => {
   const record = findActiveBan(ban.guild.id, ban.user.id);
   if (record) {
-    await registerUnban(ban.guild.id, ban.user.id, null, 'Desbanimento externo/manual');
-    terminalLog('moderation', 'Desbanimento externo detectado', null, {
+    await registerUnban(ban.guild.id, ban.user.id, null, 'External/manual unban');
+    terminalLog('moderation', 'External unban detected', null, {
       servidor: ban.guild.name,
       usuario: ban.user.tag,
     });
     await sendLog(
       ban.guild,
-      'Desbanimento detectado',
-      `**Usuário:** ${ban.user.tag} (${ban.user.id})\n**Origem:** ação externa/manual`,
+      'Unban detected',
+      `**User:** ${ban.user.tag} (${ban.user.id})\n**Source:** external/manual action`,
       0x57f287,
       false,
     );
@@ -328,7 +326,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const guild = client.guilds.cache.get(interaction.customId.split(':')[2]);
     if (!guild) {
       await interaction.reply({
-        content: 'Servidor não encontrado.',
+        content: 'Server not found.',
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -336,21 +334,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
       const result = await acceptRules(guild, interaction.user.id);
       const text = result.bypassed
-        ? '🛡️ Você faz parte da administração e já possui acesso. As regras foram confirmadas.'
-        : '✅ Regras aceitas! Você recebeu o cargo **Membro**.';
+        ? '🛡️ You are an administrator and already have access. Rules confirmed.'
+        : '✅ Rules accepted! You received the **Member** role.';
       await interaction.reply({ content: text, flags: MessageFlags.Ephemeral });
       await sendLog(
         guild,
-        'Novo membro verificado',
-        `${result.member.user.tag} aceitou as regras${result.bypassed ? ' como integrante da administração.' : ' e recebeu o cargo Membro.'}`,
+        'New member verified',
+        `${result.member.user.tag} accepted the rules${result.bypassed ? ' as an administrator.' : ' and received the Member role.'}`,
         0x57f287,
       );
     } catch (error) {
       await interaction.reply({
-        content: `❌ Não consegui concluir: ${error.message}`,
+        content: `❌ Could not complete: ${error.message}`,
         flags: MessageFlags.Ephemeral,
       });
-      await systemLog(guild, 'error', 'Falha na confirmação das regras', error);
+      await systemLog(guild, 'error', 'Rule confirmation failed', error);
     }
     return;
   }
@@ -359,7 +357,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const guild = client.guilds.cache.get(guildId);
     if (!guild) {
       await interaction.reply({
-        content: 'Servidor não encontrado.',
+        content: 'Server not found.',
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -377,9 +375,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       client.guilds.cache.get(guildId) ??
       client.guilds.cache.find((g) => g.members.cache.has(interaction.user.id));
     const member = guild ? await guild.members.fetch(interaction.user.id).catch(() => null) : null;
-    if (member?.moderatable) await member.timeout(null, 'Verificação concluída');
+    if (member?.moderatable) await member.timeout(null, 'Verification complete');
     await interaction.update({
-      content: '✅ Verificação concluída. Você já pode participar do servidor.',
+      content: '✅ Verification complete. You can now participate in the server.',
       components: [],
     });
     return;
@@ -390,7 +388,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
     ) {
       await interaction.reply({
-        content: 'Apenas a equipe pode votar.',
+        content: 'Only moderators can vote.',
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -399,21 +397,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const item = getCase(caseId);
     if (!item || item.status !== 'queued') {
       await interaction.reply({
-        content: 'Este caso não está aberto para votação.',
+        content: 'This case is not open for voting.',
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
     if (item.userId === interaction.user.id) {
       await interaction.reply({
-        content: 'O acusado não pode votar no próprio caso.',
+        content: 'The accused cannot vote on their own case.',
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-    const votes = await voteCase(caseId, interaction.user.id, verdict, 'Voto pelo painel');
+    const votes = await voteCase(caseId, interaction.user.id, verdict, 'Vote from dashboard');
     await interaction.reply({
-      content: `⚖️ Voto **${verdict}** registrado. Total de votos: ${votes.length}.`,
+      content: `⚖️ Vote **${{ inocente: 'not guilty', advertencia: 'warning', expulso: 'kicked', banido: 'banned', timeout: 'timeout' }[verdict] ?? verdict}** recorded. Total votes: ${votes.length}.`,
       flags: MessageFlags.Ephemeral,
     });
     return;
@@ -422,10 +420,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const action = interaction.customId.slice(6);
     const content =
       action === 'help'
-        ? 'Use `/ajuda` para conhecer todos os comandos.'
+        ? 'Use `/help` to see all commands.'
         : action === 'profile'
-          ? `Use \`/perfil\` para consultar seus warnings e casos.`
-          : 'Use `/denunciar` para falar em sigilo com a moderação.';
+          ? `Use \`/profile\` to view your warnings and cases.`
+          : 'Use `/report` to contact moderators privately.';
     await interaction.reply({ content, flags: MessageFlags.Ephemeral });
     return;
   }
@@ -436,21 +434,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
     );
     if (!item) {
       await interaction.reply({
-        content: 'Esse caso não está mais disponível.',
+        content: 'This case is no longer available.',
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
     await interaction.update({
-      content: `⚖️ Você entrou na fila do tribunal. Caso: **${item.id}**`,
+      content: `⚖️ You joined the tribunal queue. Case: **${item.id}**`,
       components: [],
     });
     const guild = client.guilds.cache.get(item.guildId);
     if (guild)
       await sendLog(
         guild,
-        'Pedido de julgamento',
-        `<@${item.userId}> entrou na fila. Caso: **${item.id}**`,
+        'Hearing request',
+        `<@${item.userId}> joined the queue. Case: **${item.id}**`,
         0x5865f2,
       );
     return;
@@ -463,13 +461,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
     );
     if (!warning) {
       await interaction.reply({
-        content: 'Esse aviso não está mais ativo.',
+        content: 'This warning is no longer active.',
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
     await interaction.update({
-      content: `✅ Aviso **${warning.id}** confirmado. Obrigado por colaborar.`,
+      content: `✅ Warning **${warning.id}** acknowledged. Thank you for cooperating.`,
       embeds: [],
       components: [],
     });
@@ -478,7 +476,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await sendLog(
         guild,
         'Warning confirmado',
-        `<@${warning.userId}> confirmou o aviso **${warning.id}**.`,
+        `<@${warning.userId}> acknowledged warning **${warning.id}**.`,
         0x57f287,
       );
     return;
@@ -486,7 +484,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (!interaction.isChatInputCommand() || !interaction.inCachedGuild()) return;
 
-  terminalLog('command', `Comando /${interaction.commandName} recebido`, null, {
+  terminalLog('command', `Command /${interaction.commandName} received`, null, {
     servidor: interaction.guild.name,
     usuario: interaction.user.tag,
     canal: interaction.channel?.name ?? interaction.channelId,
@@ -499,11 +497,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
       interaction.guild.channels.cache.get(guildSettings.commandChannelId) ??
       interaction.guild.channels.cache.find(
         (channel) =>
-          ['controle-bot', 'comandos-bot'].includes(channel.name) && channel.isTextBased(),
+          ['bot-controls', 'bot-commands', 'controle-bot', 'comandos-bot'].includes(channel.name) &&
+          channel.isTextBased(),
       );
     if (commandChannel && interaction.channelId !== commandChannel.id) {
       await interaction.reply({
-        content: `🦆 Use meus comandos em ${commandChannel}.`,
+        content: `🦆 Use my commands in ${commandChannel}.`,
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -512,67 +511,67 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const requiredPermission = commandPermissions.get(interaction.commandName);
     if (requiredPermission && !interaction.member.permissions.has(requiredPermission)) {
       await interaction.reply({
-        content: '🔒 Você não possui permissão para usar este comando.',
+        content: '🔒 You do not have permission to use this command.',
         flags: MessageFlags.Ephemeral,
       });
       await sendLog(
         interaction.guild,
-        'Tentativa de comando bloqueada',
-        `**Usuário:** ${interaction.user.tag} (${interaction.user.id})\n**Comando:** \`/${interaction.commandName}\`\n**Canal:** ${interaction.channel}`,
+        'Command attempt blocked',
+        `**User:** ${interaction.user.tag} (${interaction.user.id})\n**Command:** \`/${interaction.commandName}\`\n**Channel:** ${interaction.channel}`,
         0xed4245,
       );
       return;
     }
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    const reason = interaction.options.getString('motivo') ?? 'Motivo não informado';
+    const reason = interaction.options.getString('reason') ?? 'Reason not provided';
 
     if (interaction.commandName === 'config') {
       const sub = interaction.options.getSubcommand();
       const settings = getSettings(interaction.guildId);
       if (sub === 'automod')
         updateSettings(interaction.guildId, {
-          automodLevel: interaction.options.getString('nivel', true),
+          automodLevel: interaction.options.getString('level', true),
         });
-      else if (sub === 'dominio') {
+      else if (sub === 'domain') {
         const domain = interaction.options
-          .getString('dominio', true)
+          .getString('domain', true)
           .toLowerCase()
           .replace(/^https?:\/\//, '')
           .split('/')[0]
           .replace(/^www\./, '');
-        if (!/^[a-z0-9.-]+$/.test(domain)) throw new Error('Informe apenas um domínio válido.');
+        if (!/^[a-z0-9.-]+$/.test(domain)) throw new Error('Enter only a valid domain.');
         const domains = new Set(settings.allowedDomains);
-        interaction.options.getString('acao', true) === 'adicionar'
+        interaction.options.getString('action', true) === 'add'
           ? domains.add(domain)
           : domains.delete(domain);
         updateSettings(interaction.guildId, { allowedDomains: [...domains] });
-      } else if (sub === 'excecao-canal') {
-        const id = interaction.options.getChannel('canal', true).id;
+      } else if (sub === 'channel-exception') {
+        const id = interaction.options.getChannel('channel', true).id;
         const ids = new Set(settings.exemptChannelIds);
         ids.has(id) ? ids.delete(id) : ids.add(id);
         updateSettings(interaction.guildId, { exemptChannelIds: [...ids] });
-      } else if (sub === 'excecao-cargo') {
+      } else if (sub === 'role-exception') {
         const id = interaction.options.getRole('cargo', true).id;
         const ids = new Set(settings.exemptRoleIds);
         ids.has(id) ? ids.delete(id) : ids.add(id);
         updateSettings(interaction.guildId, { exemptRoleIds: [...ids] });
-      } else if (sub === 'boas-vindas')
+      } else if (sub === 'welcome')
         updateSettings(interaction.guildId, {
-          welcomeMessage: interaction.options.getString('mensagem', true),
+          welcomeMessage: interaction.options.getString('message', true),
         });
-      else if (sub === 'avisos')
+      else if (sub === 'warnings')
         updateSettings(interaction.guildId, {
-          warningThreshold: interaction.options.getInteger('pontos', true),
+          warningThreshold: interaction.options.getInteger('points', true),
         });
-      else if (sub === 'retencao')
+      else if (sub === 'retention')
         updateSettings(interaction.guildId, {
-          messageRetentionDays: interaction.options.getInteger('dias', true),
-          messageHistoryEnabled: interaction.options.getBoolean('ativo', true),
+          messageRetentionDays: interaction.options.getInteger('days', true),
+          messageHistoryEnabled: interaction.options.getBoolean('enabled', true),
         });
-      else if (sub === 'canal') {
-        const type = interaction.options.getString('tipo', true);
-        const channelId = interaction.options.getChannel('canal', true).id;
+      else if (sub === 'channel') {
+        const type = interaction.options.getString('type', true);
+        const channelId = interaction.options.getChannel('channel', true).id;
         const settingNames = {
           log: 'logChannelId',
           tribunal: 'tribunalChannelId',
@@ -582,28 +581,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (type === 'log') logChannels.set(interaction.guildId, channelId);
       }
       audit(interaction.guildId, 'settings_update', interaction.user.id, { sub });
-      await interaction.editReply('✅ Configuração atualizada.');
+      await interaction.editReply('✅ Configuration updated.');
       return;
     }
     if (interaction.commandName === 'lockdown') {
-      const enabled = interaction.options.getBoolean('ativo', true);
+      const enabled = interaction.options.getBoolean('enabled', true);
       setLockdown(interaction.guildId, enabled);
       await interaction.editReply(`🔒 Lockdown **${enabled ? 'ativado' : 'desativado'}**.`);
       await sendLog(
         interaction.guild,
         'Lockdown alterado',
-        `${interaction.user.tag} ${enabled ? 'ativou' : 'desativou'} a proteção anti-raid.`,
+        `${interaction.user.tag} ${enabled ? 'enabled' : 'disabled'} anti-raid protection.`,
         enabled ? 0xed4245 : 0x57f287,
       );
       return;
     }
-    if (interaction.commandName === 'perfil') {
-      const user = interaction.options.getUser('membro') ?? interaction.user;
+    if (interaction.commandName === 'profile') {
+      const user = interaction.options.getUser('member') ?? interaction.user;
       if (
         user.id !== interaction.user.id &&
         !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)
       )
-        throw new Error('Você só pode consultar o próprio perfil.');
+        throw new Error('You can only view your own profile.');
       const warnings = activeWarnings(interaction.guildId, user.id);
       const cases = queuedCases(interaction.guildId).filter((c) => c.userId === user.id);
       const ban = findLatestBan(interaction.guildId, user.id);
@@ -611,18 +610,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
         embeds: [
           new EmbedBuilder()
             .setColor(warnings.length ? 0xfee75c : 0x57f287)
-            .setTitle(`Perfil disciplinar — ${user.tag}`)
+            .setTitle(`Disciplinary profile — ${user.tag}`)
             .setThumbnail(user.displayAvatarURL())
             .addFields(
               { name: 'Warnings ativos', value: String(warnings.length), inline: true },
               {
                 name: 'Tribunal',
-                value: cases.length ? 'Caso aguardando' : 'Nenhum caso',
+                value: cases.length ? 'Case pending' : 'No cases',
                 inline: true,
               },
               {
-                name: 'Último ban',
-                value: ban ? `${ban.status}: ${ban.reason}`.slice(0, 1024) : 'Nenhum',
+                name: 'Last ban',
+                value: ban ? `${ban.status}: ${ban.reason}`.slice(0, 1024) : 'None',
                 inline: false,
               },
             ),
@@ -631,7 +630,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
     if (interaction.commandName === 'userinfo') {
-      const user = interaction.options.getUser('membro') ?? interaction.user;
+      const user = interaction.options.getUser('member') ?? interaction.user;
       const member = await interaction.guild.members.fetch(user.id).catch(() => null);
       const created = Math.floor(user.createdTimestamp / 1000);
       const joined = member ? Math.floor(member.joinedTimestamp / 1000) : null;
@@ -642,7 +641,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setTitle(user.tag)
             .setThumbnail(user.displayAvatarURL())
             .setDescription(
-              `**ID:** \`${user.id}\`\n**Conta criada:** <t:${created}:R>${joined ? `\n**Entrou:** <t:${joined}:R>` : ''}\n**Cargos:** ${member ? member.roles.cache.size - 1 : '—'}`,
+              `**ID:** \`${user.id}\`\n**Account created:** <t:${created}:R>${joined ? `\n**Entrou:** <t:${joined}:R>` : ''}\n**Roles:** ${member ? member.roles.cache.size - 1 : '—'}`,
             ),
         ],
       });
@@ -657,11 +656,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setTitle(guild.name)
             .setThumbnail(guild.iconURL())
             .addFields(
-              { name: 'Membros', value: String(guild.memberCount), inline: true },
-              { name: 'Canais', value: String(guild.channels.cache.size), inline: true },
-              { name: 'Cargos', value: String(guild.roles.cache.size), inline: true },
+              { name: 'Members', value: String(guild.memberCount), inline: true },
+              { name: 'Channels', value: String(guild.channels.cache.size), inline: true },
+              { name: 'Roles', value: String(guild.roles.cache.size), inline: true },
               {
-                name: 'Criado',
+                name: 'Created',
                 value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`,
                 inline: true,
               },
@@ -670,14 +669,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
       return;
     }
-    if (interaction.commandName === 'denunciar') {
-      const target = interaction.options.getUser('membro', true);
-      if (target.id === interaction.user.id) throw new Error('Você não pode denunciar a si mesmo.');
-      if (target.bot) throw new Error('Bots devem ser informados diretamente à equipe.');
-      const reportReason = interaction.options.getString('motivo', true);
-      const type = interaction.options.getString('tipo') ?? 'texto';
-      const evidence = interaction.options.getString('evidencia') ?? null;
-      const anonymous = interaction.options.getBoolean('anonima') ?? true;
+    if (interaction.commandName === 'report') {
+      const target = interaction.options.getUser('member', true);
+      if (target.id === interaction.user.id) throw new Error('You cannot report yourself.');
+      if (target.bot) throw new Error('Report bots directly to the moderators.');
+      const reportReason = interaction.options.getString('reason', true);
+      const type = interaction.options.getString('type') ?? 'texto';
+      const evidence = interaction.options.getString('evidence') ?? null;
+      const anonymous = interaction.options.getBoolean('anonymous') ?? true;
       const cutoff = new Date(Date.now() - 10 * 60_000).toISOString();
       if (
         db
@@ -686,7 +685,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
           )
           .get(interaction.guildId, interaction.user.id, target.id, cutoff)
       )
-        throw new Error('Você já denunciou esse membro recentemente. Aguarde a equipe analisar.');
+        throw new Error(
+          'You already reported this member recently. Wait for moderators to review it.',
+        );
       const id = `R-${Date.now().toString(36)}`;
       const storedReason = `[${type}] ${reportReason}`;
       db.prepare(
@@ -717,9 +718,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
           embeds: [
             new EmbedBuilder()
               .setColor(type === 'grave' ? 0xeb459e : 0xed4245)
-              .setTitle(`Denúncia ${id} • ${type}`)
+              .setTitle(`Report ${id} • ${type}`)
               .setDescription(
-                `**Alvo:** ${target}\n**Autor:** ${anonymous ? 'mantido no registro privado' : interaction.user}\n**Motivo:** ${reportReason}\n**Evidência:** ${evidence ?? 'não anexada'}`,
+                `**Target:** ${target}\n**Reporter:** ${anonymous ? 'stored in the private record' : interaction.user}\n**Reason:** ${reportReason}\n**Evidence:** ${evidence ?? 'not attached'}`,
               )
               .setTimestamp(),
           ],
@@ -736,8 +737,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
         if (count >= 3 && targetMember?.voice.channel) {
           await sendLog(
             interaction.guild,
-            'Revisão urgente de voz necessária',
-            `${target} recebeu ${count} denúncias únicas de voz. Nenhuma punição automática foi aplicada; a equipe deve entrar na call e revisar.`,
+            'Urgent voice review required',
+            `${target} received ${count} unique voice reports. No automatic punishment was applied; moderators must join the call and review.`,
             0xeb459e,
           );
         }
@@ -758,34 +759,34 @@ client.on(Events.InteractionCreate, async (interaction) => {
           const item = await createCase({
             guildId: interaction.guildId,
             userId: target.id,
-            type: 'denúncias graves',
-            evidence: `${count} denúncias únicas em 30 minutos`,
+            type: 'serious reports',
+            evidence: `${count} unique reports in 30 minutes`,
             messageHistory: getMessageHistory(interaction.guildId, target.id),
           });
           await joinQueue(item.id, target.id);
           await postTribunalPanel(interaction.guild, item, target);
           if (targetMember?.moderatable)
-            await targetMember.timeout(60 * 60_000, 'Caso grave aguardando tribunal');
+            await targetMember.timeout(60 * 60_000, 'Serious case awaiting tribunal review');
         }
       }
-      await interaction.editReply(`✅ Denúncia **${id}** enviada em sigilo.`);
+      await interaction.editReply(`✅ Report **${id}** sent privately.`);
       return;
     }
-    if (interaction.commandName === 'painel') {
+    if (interaction.commandName === 'panel') {
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('panel:help')
-          .setLabel('Ajuda')
+          .setLabel('Help')
           .setEmoji('📚')
           .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
           .setCustomId('panel:profile')
-          .setLabel('Meu perfil')
+          .setLabel('My profile')
           .setEmoji('👤')
           .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('panel:report')
-          .setLabel('Denunciar')
+          .setLabel('Report')
           .setEmoji('🚨')
           .setStyle(ButtonStyle.Danger),
       );
@@ -794,122 +795,117 @@ client.on(Events.InteractionCreate, async (interaction) => {
           new EmbedBuilder()
             .setColor(0xf4c430)
             .setTitle('🦆 Duck Bot')
-            .setDescription(
-              'Central de segurança e moderação do servidor. Escolha uma opção abaixo.',
-            ),
+            .setDescription('Server security and moderation center. Choose an option below.'),
         ],
         components: [row],
       });
-      await interaction.editReply('✅ Painel publicado.');
+      await interaction.editReply('✅ Dashboard posted.');
       return;
     }
-    if (interaction.commandName === 'relatorio') {
-      const user = interaction.options.getUser('membro', true);
+    if (interaction.commandName === 'audit') {
+      const user = interaction.options.getUser('member', true);
       const events = userAudit(interaction.guildId, user.id, 20);
       const lines = events.map(
         (e) =>
           `<t:${Math.floor(new Date(e.created_at).getTime() / 1000)}:d> — ${eventLabel(e.event_type)}`,
       );
       await interaction.editReply(
-        `**Auditoria de ${user.tag}:**\n${lines.join('\n') || 'Nenhum evento registrado.'}`.slice(
-          0,
-          2000,
-        ),
+        `**Audit for ${user.tag}:**\n${lines.join('\n') || 'No events recorded.'}`.slice(0, 2000),
       );
       return;
     }
-    if (interaction.commandName === 'limpar-warnings') {
+    if (interaction.commandName === 'clear-warnings') {
       const count = clearExpiredWarnings(interaction.guildId);
-      await interaction.editReply(`✅ ${count} warning(s) expirado(s) foram arquivados.`);
+      await interaction.editReply(`✅ ${count} expired warning(s) archived.`);
       return;
     }
     if (interaction.commandName === 'backup') {
       const path = backupDatabase();
-      await interaction.editReply(`✅ Backup criado: \`${path}\``);
+      await interaction.editReply(`✅ Backup created: \`${path}\``);
       return;
     }
-    if (interaction.commandName === 'diagnostico') {
+    if (interaction.commandName === 'diagnostics') {
       const diagnostic = diagnoseGuild(interaction.guild);
       const formatted = formatDiagnostic(diagnostic);
       await interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setColor(diagnostic.failures.length ? 0xfee75c : 0x57f287)
-            .setTitle('🩺 Diagnóstico do Duck Bot')
+            .setTitle('🩺 Duck Bot diagnostics')
             .setDescription(formatted.summary)
             .addFields(
-              { name: 'Permissões', value: formatted.permissions },
-              { name: 'Canais', value: formatted.channels },
+              { name: 'Permissions', value: formatted.permissions },
+              { name: 'Channels', value: formatted.channels },
               {
-                name: 'Banco de dados',
-                value: diagnostic.databaseOk ? '✅ Respondendo' : '❌ Indisponível',
+                name: 'Database',
+                value: diagnostic.databaseOk ? '✅ Responding' : '❌ Unavailable',
                 inline: true,
               },
               {
-                name: 'Hierarquia',
+                name: 'Hierarchy',
                 value: diagnostic.rolePositionOk
-                  ? '✅ Cargo do bot está elevado'
-                  : '⚠️ Confira a posição do cargo Duck Bot',
+                  ? '✅ Bot role is elevated'
+                  : '⚠️ Check the Duck Bot role position',
                 inline: true,
               },
             )
-            .setFooter({ text: 'Coloque o cargo do Duck Bot acima dos membros que ele moderará.' })
+            .setFooter({ text: 'Place the Duck Bot role above the members it will moderate.' })
             .setTimestamp(),
         ],
       });
       return;
     }
-    if (interaction.commandName === 'setup-inicial') {
-      const format = interaction.options.getString('formato') ?? 'compacto';
-      const cleanup = interaction.options.getBoolean('limpar-antigo') ?? false;
+    if (interaction.commandName === 'setup') {
+      const format = interaction.options.getString('format') ?? 'compacto';
+      const cleanup = interaction.options.getBoolean('clear-old') ?? false;
       const setup = await setupOnboarding(interaction.guild, { format, cleanup });
-      const removed = setup.removed.length ? `\n**Removidos:** ${setup.removed.join(', ')}` : '';
+      const removed = setup.removed.length ? `\n**Removed:** ${setup.removed.join(', ')}` : '';
       await interaction.editReply(
-        `✅ Setup **${format}** concluído em ${setup.category}. Entrada: ${setup.rules}.${removed}`,
+        `✅ **${format}** setup completed in ${setup.category}. Entry: ${setup.rules}.${removed}`,
       );
       await sendLog(
         interaction.guild,
-        'Setup inicial concluído',
-        `${interaction.user.tag} criou/atualizou a recepção ${format}.${removed}`,
+        'Initial setup complete',
+        `${interaction.user.tag} created/updated ${format} onboarding.${removed}`,
         0x57f287,
       );
       return;
     }
-    if (interaction.commandName === 'moderar-voz') {
-      const member = interaction.options.getMember('membro');
-      if (!member) throw new Error('Esse membro não está no servidor.');
-      if (!member.voice.channel) throw new Error('Esse membro não está em uma call.');
+    if (interaction.commandName === 'voice-moderation') {
+      const member = interaction.options.getMember('member');
+      if (!member) throw new Error('This member is not in the server.');
+      if (!member.voice.channel) throw new Error('This member is not in a voice call.');
       assertModeratable(interaction, member);
-      const action = interaction.options.getString('acao', true);
+      const action = interaction.options.getString('action', true);
       await member.voice.setDeaf(action === 'ensurdecer', reason);
       await interaction.editReply(
-        `${action === 'ensurdecer' ? '🔇' : '🔊'} **${member.user.tag}** foi ${action === 'ensurdecer' ? 'ensurdecido' : 'liberado'}.`,
+        `${action === 'ensurdecer' ? '🔇' : '🔊'} **${member.user.tag}** was ${action === 'ensurdecer' ? 'deafened' : 'undeafened'}.`,
       );
-      await moderationLog(interaction, `Voz: ${action}`, member.user.tag, reason);
+      await moderationLog(interaction, `Voice: ${action}`, member.user.tag, reason);
       return;
     }
-    if (interaction.commandName === 'cargo-apoiador') {
-      const member = interaction.options.getMember('membro');
-      if (!member) throw new Error('Esse membro não está no servidor.');
-      const roleName = interaction.options.getString('plataforma', true);
-      const action = interaction.options.getString('acao', true);
+    if (interaction.commandName === 'supporter-role') {
+      const member = interaction.options.getMember('member');
+      if (!member) throw new Error('This member is not in the server.');
+      const roleName = interaction.options.getString('platform', true);
+      const action = interaction.options.getString('action', true);
       let role = interaction.guild.roles.cache.find((item) => item.name === roleName);
       if (!role)
         role = await interaction.guild.roles.create({
           name: roleName,
-          reason: 'Cargo de apoiador do Duck Bot',
+          reason: 'Duck Bot supporter role',
         });
       await (action === 'conceder'
-        ? member.roles.add(role, 'Apoio verificado pela equipe')
-        : member.roles.remove(role, 'Apoio encerrado ou removido'));
+        ? member.roles.add(role, 'Support verified by moderators')
+        : member.roles.remove(role, 'Support ended or removed'));
       await interaction.editReply(
-        `✅ Cargo **${role.name}** ${action === 'conceder' ? 'concedido a' : 'removido de'} **${member.user.tag}**.`,
+        `✅ Role **${role.name}** ${action === 'conceder' ? 'granted to' : 'removed from'} **${member.user.tag}**.`,
       );
-      await moderationLog(interaction, `Cargo de apoiador: ${action}`, member.user.tag, role.name);
+      await moderationLog(interaction, `Supporter role: ${action}`, member.user.tag, role.name);
       return;
     }
 
-    if (interaction.commandName === 'ajuda') {
+    if (interaction.commandName === 'help') {
       await interaction.editReply({
         embeds: [
           new EmbedBuilder()
@@ -917,18 +913,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setTitle('🦆 Central do Duck Bot')
             .setDescription(
               [
-                '**Moderação**',
-                '`/limpar` `/expulsar` `/banir` `/timeout` `/untimeout`',
-                '`/avisar` `/avisos` `/remover-aviso`',
+                '**Moderation**',
+                '`/clear` `/kick` `/ban` `/timeout` `/untimeout`',
+                '`/warn` `/warnings` `/remove-warning`',
                 '',
                 '**Tribunal**',
-                '`/tribunal-fila` `/julgar`',
+                '`/tribunal-queue` `/judge`',
                 '',
-                '**Registros**',
-                '`/banidos` `/desbanir` `/historico-ban`',
+                '**Records**',
+                '`/bans` `/unban` `/ban-history`',
                 '',
-                '**Sistema**',
-                '`/ajuda` `/status` `/perfil` `/userinfo` `/serverinfo` `/denunciar`',
+                '**System**',
+                '`/help` `/status` `/profile` `/userinfo` `/serverinfo` `/report`',
               ].join('\n'),
             ),
         ],
@@ -936,9 +932,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    if (interaction.commandName === 'avisar') {
-      const target = interaction.options.getMember('membro');
-      if (!target) throw new Error('Esse membro não está no servidor.');
+    if (interaction.commandName === 'warn') {
+      const target = interaction.options.getMember('member');
+      if (!target) throw new Error('This member is not in the server.');
       assertModeratable(interaction, target);
       const result = await addWarning({
         guildId: interaction.guildId,
@@ -962,30 +958,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    if (interaction.commandName === 'avisos') {
-      const user = interaction.options.getUser('membro', true);
+    if (interaction.commandName === 'warnings') {
+      const user = interaction.options.getUser('member', true);
       const warnings = activeWarnings(interaction.guildId, user.id);
       const content = warnings.length
         ? warnings
             .map(
               (warning, index) =>
-                `${index + 1}. \`${warning.id}\` — ${warning.reason} — ${warning.severity ?? 1} ponto(s) — ${warning.acknowledged ? 'confirmado' : 'não confirmado'}`,
+                `${index + 1}. \`${warning.id}\` — ${warning.reason} — ${warning.severity ?? 1} point(s) — ${warning.acknowledged ? 'acknowledged' : 'not acknowledged'}`,
             )
             .join('\n')
-        : 'Esse membro não possui warnings ativos.';
+        : 'This member has no active warnings.';
       await interaction.editReply(`**Warnings de ${user.tag}:**\n${content}`);
       return;
     }
 
-    if (interaction.commandName === 'remover-aviso') {
-      const warningId = interaction.options.getString('aviso-id', true);
+    if (interaction.commandName === 'remove-warning') {
+      const warningId = interaction.options.getString('warning-id', true);
       const warning = await revokeWarning(
         interaction.guildId,
         warningId,
         interaction.user.id,
         reason,
       );
-      if (!warning) throw new Error('Não encontrei um warning ativo com esse identificador.');
+      if (!warning) throw new Error('No active warning was found with this ID.');
       await interaction.editReply(`✅ Warning **${warning.id}** removido de <@${warning.userId}>.`);
       await moderationLog(
         interaction,
@@ -1006,33 +1002,33 @@ client.on(Events.InteractionCreate, async (interaction) => {
             .setTitle('Status do Duck Bot')
             .addFields(
               {
-                name: 'Conexão',
+                name: 'Connection',
                 value: `Online — ${metrics.ping} ms`,
                 inline: true,
               },
-              { name: 'Ligado há', value: formatDuration(metrics.uptime), inline: true },
-              { name: 'Memória', value: `${metrics.memoryMb} MB`, inline: true },
-              { name: 'Comandos processados', value: `${metrics.commands}`, inline: true },
-              { name: 'Ações de moderação', value: `${metrics.moderationActions}`, inline: true },
-              { name: 'Erros registrados', value: `${metrics.errors}`, inline: true },
+              { name: 'Uptime', value: formatDuration(metrics.uptime), inline: true },
+              { name: 'Memory', value: `${metrics.memoryMb} MB`, inline: true },
+              { name: 'Commands processed', value: `${metrics.commands}`, inline: true },
+              { name: 'Moderation actions', value: `${metrics.moderationActions}`, inline: true },
+              { name: 'Errors recorded', value: `${metrics.errors}`, inline: true },
               {
                 name: 'Tribunal',
-                value: `${queuedCases(interaction.guildId).length} caso(s)`,
+                value: `${queuedCases(interaction.guildId).length} case(s)`,
                 inline: true,
               },
               {
-                name: 'Banidos ativos',
+                name: 'Active bans',
                 value: `${activeBans(interaction.guildId).length}`,
                 inline: true,
               },
               {
-                name: 'Comandos',
-                value: commandChannel ? `${commandChannel}` : 'Canal não criado',
+                name: 'Commands',
+                value: commandChannel ? `${commandChannel}` : 'Channel not created',
                 inline: true,
               },
               {
                 name: 'Logs',
-                value: logChannel?.isTextBased() ? `${logChannel}` : 'Indisponível',
+                value: logChannel?.isTextBased() ? `${logChannel}` : 'Unavailable',
                 inline: true,
               },
             )
@@ -1042,90 +1038,90 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    if (interaction.commandName === 'tribunal-fila') {
+    if (interaction.commandName === 'tribunal-queue') {
       const queue = queuedCases(interaction.guildId);
       const content = queue.length
         ? queue
             .slice(0, 20)
             .map(
               (item, index) =>
-                `${index + 1}. <@${item.userId}> — ${item.type} — caso \`${item.id}\``,
+                `${index + 1}. <@${item.userId}> — ${item.type} — case \`${item.id}\``,
             )
             .join('\n')
-        : 'A fila do tribunal está vazia. A paz reina no lago. 🦆';
+        : 'The tribunal queue is empty. Peace reigns on the pond. 🦆';
       await interaction.editReply(content);
       return;
     }
 
-    if (interaction.commandName === 'banidos') {
+    if (interaction.commandName === 'bans') {
       const bans = activeBans(interaction.guildId);
       const content = bans.length
         ? bans
             .slice(0, 20)
             .map((item, index) => {
               const date = Math.floor(new Date(item.bannedAt).getTime() / 1000);
-              return `${index + 1}. **${item.userTag ?? item.userId}** (\`${item.userId}\`)\nMotivo: ${item.reason} — <t:${date}:d>`;
+              return `${index + 1}. **${item.userTag ?? item.userId}** (\`${item.userId}\`)\nReason: ${item.reason} — <t:${date}:d>`;
             })
             .join('\n\n')
-        : 'A lista de banidos está vazia. 🦆';
+        : 'The ban list is empty. 🦆';
       await interaction.editReply(content);
       return;
     }
 
-    if (interaction.commandName === 'desbanir') {
-      const userId = interaction.options.getString('usuario-id', true).trim();
-      if (!/^\d{17,20}$/.test(userId)) throw new Error('Informe um ID de usuário válido.');
+    if (interaction.commandName === 'unban') {
+      const userId = interaction.options.getString('user-id', true).trim();
+      if (!/^\d{17,20}$/.test(userId)) throw new Error('Enter a valid user ID.');
 
       const oldRecord = findActiveBan(interaction.guildId, userId);
       const ban = await interaction.guild.bans.fetch(userId).catch(() => null);
-      if (!ban) throw new Error('Esse usuário não está banido neste servidor.');
+      if (!ban) throw new Error('This user is not banned from this server.');
 
       await interaction.guild.members.unban(userId, reason);
       const record = await registerUnban(interaction.guildId, userId, interaction.user.id, reason);
-      const originalReason = record?.reason ?? oldRecord?.reason ?? ban.reason ?? 'Não registrado';
+      const originalReason = record?.reason ?? oldRecord?.reason ?? ban.reason ?? 'Not recorded';
       await interaction.editReply(
-        `✅ **${ban.user.tag}** foi desbanido.\nMotivo original: **${originalReason}**`,
+        `✅ **${ban.user.tag}** was unbanned.\nOriginal reason: **${originalReason}**`,
       );
       await sendLog(
         interaction.guild,
-        'Membro desbanido',
-        `**Usuário:** ${ban.user.tag} (${userId})\n**Motivo do ban:** ${originalReason}\n**Motivo do desban:** ${reason}\n**Responsável:** ${interaction.user.tag}`,
+        'Member unbanned',
+        `**User:** ${ban.user.tag} (${userId})\n**Ban reason:** ${originalReason}\n**Unban reason:** ${reason}\n**Responsible moderator:** ${interaction.user.tag}`,
         0x57f287,
       );
       return;
     }
 
-    if (interaction.commandName === 'historico-ban') {
-      const userId = interaction.options.getString('usuario-id', true).trim();
-      if (!/^\d{17,20}$/.test(userId)) throw new Error('Informe um ID de usuário válido.');
+    if (interaction.commandName === 'ban-history') {
+      const userId = interaction.options.getString('user-id', true).trim();
+      if (!/^\d{17,20}$/.test(userId)) throw new Error('Enter a valid user ID.');
       const record = findLatestBan(interaction.guildId, userId);
-      if (!record) throw new Error('Não encontrei um registro de banimento para esse usuário.');
+      if (!record) throw new Error('No ban record was found for this user.');
 
       const history = record.messageHistory ?? [];
       const lines = history.length
         ? history.slice(-15).map((message) => {
             const time = Math.floor(new Date(message.createdAt).getTime() / 1000);
             const content =
-              message.content.replace(/\s+/g, ' ').slice(0, 180) || '[sem conteúdo textual]';
+              message.content.replace(/\s+/g, ' ').slice(0, 180) || '[no text content]';
             return `<t:${time}:t> <#${message.channelId}> — ${content}`;
           })
-        : ['Nenhuma mensagem estava disponível quando o ban foi registrado.'];
-      const header = `**Dossiê de ${record.userTag ?? userId}**\n**Motivo do ban:** ${record.reason}\n`;
+        : ['No messages were available when the ban was recorded.'];
+      const header = `**Record for ${record.userTag ?? userId}**\n**Ban reason:** ${record.reason}\n`;
       await interaction.editReply(`${header}\n${lines.join('\n')}`.slice(0, 2000));
       return;
     }
 
-    if (interaction.commandName === 'julgar') {
-      const user = interaction.options.getUser('membro', true);
-      const verdict = interaction.options.getString('veredito', true);
+    if (interaction.commandName === 'judge') {
+      const user = interaction.options.getUser('member', true);
+      const verdict = interaction.options.getString('verdict', true);
       const pending = queuedCases(interaction.guildId).find((item) => item.userId === user.id);
-      if (!pending) throw new Error('Esse membro não possui um caso aguardando julgamento.');
+      if (!pending) throw new Error('This member has no case awaiting judgment.');
 
       const member = await interaction.guild.members.fetch(user.id).catch(() => null);
       if (verdict === 'banido') {
         if (!member?.bannable)
-          throw new Error('Não consigo banir esse membro pela hierarquia de cargos.');
-        await member.ban({ reason: `Veredito do tribunal: ${reason}` });
+          throw new Error('I cannot ban this member because of the role hierarchy.');
+        await member.ban({ reason: `Tribunal verdict: ${reason}` });
         await registerBan({
           guildId: interaction.guildId,
           userId: user.id,
@@ -1138,61 +1134,69 @@ client.on(Events.InteractionCreate, async (interaction) => {
         });
       } else if (verdict === 'expulso') {
         if (!member?.kickable)
-          throw new Error('Não consigo expulsar esse membro pela hierarquia de cargos.');
-        await member.kick(`Veredito do tribunal: ${reason}`);
+          throw new Error('I cannot kick this member because of the role hierarchy.');
+        await member.kick(`Tribunal verdict: ${reason}`);
       } else if (verdict === 'timeout' && member?.moderatable) {
-        await member.timeout(24 * 60 * 60_000, `Veredito do tribunal: ${reason}`);
+        await member.timeout(24 * 60 * 60_000, `Tribunal verdict: ${reason}`);
       } else if (member?.moderatable) {
-        await member.timeout(null, `Veredito do tribunal: ${verdict}`);
+        await member.timeout(
+          null,
+          `Tribunal verdict: ${{ inocente: 'not guilty', advertencia: 'warning', expulso: 'kicked', banido: 'banned', timeout: 'timeout' }[verdict] ?? verdict}`,
+        );
       }
 
       await closeCase(interaction.guildId, user.id, verdict, interaction.user.id, reason);
-      await interaction.editReply(`⚖️ Veredito de **${user.tag}**: **${verdict}**.`);
-      await moderationLog(interaction, `Veredito: ${verdict}`, `${user.tag} (${user.id})`, reason);
+      await interaction.editReply(
+        `⚖️ Veredito de **${user.tag}**: **${{ inocente: 'not guilty', advertencia: 'warning', expulso: 'kicked', banido: 'banned', timeout: 'timeout' }[verdict] ?? verdict}**.`,
+      );
+      await moderationLog(
+        interaction,
+        `Veredito: ${{ inocente: 'not guilty', advertencia: 'warning', expulso: 'kicked', banido: 'banned', timeout: 'timeout' }[verdict] ?? verdict}`,
+        `${user.tag} (${user.id})`,
+        reason,
+      );
       await user
         .send(
-          `⚖️ O tribunal de **${interaction.guild.name}** decidiu: **${verdict}**. Motivo: ${reason}`,
+          `⚖️ The tribunal of **${interaction.guild.name}** decided: **${{ inocente: 'not guilty', advertencia: 'warning', expulso: 'kicked', banido: 'banned', timeout: 'timeout' }[verdict] ?? verdict}**. Reason: ${reason}`,
         )
         .catch(() => null);
       return;
     }
 
-    if (interaction.commandName === 'limpar') {
-      const amount = interaction.options.getInteger('quantidade', true);
-      const selectedChannel = interaction.options.getChannel('canal') ?? interaction.channel;
+    if (interaction.commandName === 'clear') {
+      const amount = interaction.options.getInteger('count', true);
+      const selectedChannel = interaction.options.getChannel('channel') ?? interaction.channel;
       if (!selectedChannel?.isTextBased() || typeof selectedChannel.bulkDelete !== 'function') {
-        throw new Error('Escolha um canal de texto que permita apagar mensagens.');
+        throw new Error('Choose a text channel where messages can be deleted.');
       }
       if (
         !selectedChannel
           .permissionsFor(interaction.guild.members.me)
           ?.has(PermissionFlagsBits.ManageMessages)
       ) {
-        throw new Error(`Não tenho permissão para apagar mensagens em ${selectedChannel}.`);
+        throw new Error(`I do not have permission to delete messages in ${selectedChannel}.`);
       }
       const deleted = await selectedChannel.bulkDelete(amount, true);
-      await interaction.editReply(`${deleted.size} mensagem(ns) apagada(s) em ${selectedChannel}.`);
+      await interaction.editReply(`${deleted.size} message(s) deleted in ${selectedChannel}.`);
       await moderationLog(
         interaction,
-        'Mensagens apagadas',
-        `${deleted.size} mensagem(ns) em ${selectedChannel}.`,
+        'Messages deleted',
+        `${deleted.size} message(s) in ${selectedChannel}.`,
         reason,
       );
       return;
     }
 
-    const target = interaction.options.getMember('membro');
-    if (!target) throw new Error('Esse membro não está no servidor.');
+    const target = interaction.options.getMember('member');
+    if (!target) throw new Error('This member is not in the server.');
     assertModeratable(interaction, target);
 
-    if (interaction.commandName === 'expulsar') {
-      if (!target.kickable)
-        throw new Error('Não consigo expulsar esse membro. Verifique a hierarquia de cargos.');
+    if (interaction.commandName === 'kick') {
+      if (!target.kickable) throw new Error('I cannot kick this member. Check the role hierarchy.');
       await target.kick(reason);
-      await finishAction(interaction, 'Membro expulso', target, reason);
-    } else if (interaction.commandName === 'banir') {
-      if (!target.bannable)
-        throw new Error('Não consigo banir esse membro. Verifique a hierarquia de cargos.');
+      await finishAction(interaction, 'Member kicked', target, reason);
+    } else if (interaction.commandName === 'ban') {
+      if (!target.bannable) throw new Error('I cannot ban this member. Check the role hierarchy.');
       await target.ban({ reason });
       await registerBan({
         guildId: interaction.guildId,
@@ -1200,17 +1204,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
         userTag: target.user.tag,
         reason,
         moderatorId: interaction.user.id,
-        source: 'comando',
+        source: 'command',
         messageHistory: getMessageHistory(interaction.guildId, target.id),
       });
-      await finishAction(interaction, 'Membro banido', target, reason);
+      await finishAction(interaction, 'Member banned', target, reason);
     } else if (interaction.commandName === 'timeout') {
-      if (!target.moderatable) throw new Error('Não consigo aplicar timeout nesse membro.');
-      const minutes = interaction.options.getInteger('minutos', true);
+      if (!target.moderatable) throw new Error('I cannot time out this member.');
+      const minutes = interaction.options.getInteger('minutes', true);
       await target.timeout(minutes * 60_000, reason);
       await finishAction(interaction, `Timeout de ${minutes} minuto(s)`, target, reason);
     } else if (interaction.commandName === 'untimeout') {
-      if (!target.moderatable) throw new Error('Não consigo remover o timeout desse membro.');
+      if (!target.moderatable) throw new Error("I cannot remove this member's timeout.");
       await target.timeout(null, reason);
       await finishAction(interaction, 'Timeout removido', target, reason);
     }
@@ -1218,10 +1222,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await systemLog(
       interaction.guild,
       'error',
-      `Falha no comando /${interaction.commandName}`,
+      `Command /${interaction.commandName} failed`,
       error,
     );
-    const message = `Não foi possível concluir: ${error.message}`;
+    const message = `Could not complete: ${error.message}`;
     if (interaction.deferred || interaction.replied) await interaction.editReply(message);
     else await interaction.reply({ content: message, flags: MessageFlags.Ephemeral });
   }
@@ -1231,24 +1235,24 @@ async function configureGuild(guild) {
   try {
     const channel = await setupGuild(guild);
     logChannels.set(guild.id, channel.id);
-    await systemLog(guild, 'success', 'Duck Bot pronto — cargo e canais verificados.');
+    await systemLog(guild, 'success', 'Duck Bot ready — role and channels checked.');
   } catch (error) {
-    terminalLog('error', `Falha ao configurar ${guild.name}`, error);
+    terminalLog('error', `Failed to configure ${guild.name}`, error);
   }
 }
 
 function assertModeratable(interaction, target) {
   if (target.id === interaction.user.id)
-    throw new Error('Você não pode executar essa ação em si mesmo.');
+    throw new Error('You cannot perform this action on yourself.');
   if (target.id === interaction.guild.ownerId)
-    throw new Error('O dono do servidor não pode receber essa ação.');
+    throw new Error('This action cannot target the server owner.');
 
   const moderator = interaction.member;
   if (
     moderator.id !== interaction.guild.ownerId &&
     moderator.roles.highest.comparePositionTo(target.roles.highest) <= 0
   ) {
-    throw new Error('Seu cargo precisa estar acima do cargo do membro alvo.');
+    throw new Error("Your role must be above the target member's role.");
   }
 }
 
@@ -1269,7 +1273,7 @@ async function moderationLog(interaction, title, target, reason) {
   await sendLog(
     interaction.guild,
     title,
-    `**Alvo:** ${target}\n**Moderador:** ${interaction.user.tag}\n**Motivo:** ${reason}`,
+    `**Target:** ${target}\n**Moderator:** ${interaction.user.tag}\n**Reason:** ${reason}`,
     0xfee75c,
     false,
   );
@@ -1298,20 +1302,20 @@ async function systemLog(guild, level, message, error) {
   terminalLog(level, message, error);
   if (!guild) return;
   const safeError = error instanceof Error ? error.message : String(error ?? '');
-  const description = [message, safeError && `**Detalhe:** ${safeError}`]
+  const description = [message, safeError && `**Details:** ${safeError}`]
     .filter(Boolean)
     .join('\n')
     .slice(0, 4000);
   try {
     await sendLog(
       guild,
-      `${logIcon(level)} Sistema • ${level.toUpperCase()}`,
+      `${logIcon(level)} System • ${level.toUpperCase()}`,
       description,
       logColor(level),
       false,
     );
   } catch (logError) {
-    terminalLog('error', 'Não foi possível enviar um evento ao log-bot', logError);
+    terminalLog('error', 'Could not send an event to log-bot', logError);
   }
 }
 
@@ -1330,11 +1334,11 @@ process.on('warning', (warning) => {
 });
 client.on(
   Events.Error,
-  (error) => void broadcastSystemLog('error', 'Erro interno do cliente Discord', error),
+  (error) => void broadcastSystemLog('error', 'Internal Discord client error', error),
 );
 client.on(
   Events.ShardError,
-  (error) => void broadcastSystemLog('error', 'Falha na conexão com o Gateway do Discord', error),
+  (error) => void broadcastSystemLog('error', 'Discord Gateway connection failed', error),
 );
 
 let shuttingDown = false;
@@ -1357,12 +1361,12 @@ setInterval(
         prunedMessages += pruneMessageHistory(guild.id);
       }
       const path = backupDatabase();
-      terminalLog('success', `Manutenção diária concluída`, null, {
+      terminalLog('success', `Daily maintenance complete`, null, {
         backup: path,
         mensagensExpiradas: prunedMessages,
       });
     } catch (error) {
-      terminalLog('error', 'Falha no backup automático', error);
+      terminalLog('error', 'Automatic backup failed', error);
     }
   },
   24 * 60 * 60_000,
@@ -1371,13 +1375,13 @@ setInterval(
 async function offerTrial(message, item) {
   const button = new ButtonBuilder()
     .setCustomId(`tribunal:${item.id}`)
-    .setLabel('Entrar na fila do tribunal')
+    .setLabel('Join the tribunal queue')
     .setEmoji('⚖️')
     .setStyle(ButtonStyle.Primary);
   const row = new ActionRowBuilder().addComponents(button);
   await message.author
     .send({
-      content: `Uma mensagem sua em **${message.guild.name}** foi sinalizada por **${item.type}** e você recebeu 10 minutos de quarentena. Se quiser contestar, peça um julgamento:`,
+      content: `A message you sent in **${message.guild.name}** was flagged as **${item.type}**, and you were quarantined for 10 minutes. To appeal, request a hearing:`,
       components: [row],
     })
     .catch(() => null);
@@ -1392,11 +1396,11 @@ async function postTribunalPanel(guild, item, user) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`court-vote:${item.id}:inocente`)
-      .setLabel('Inocente')
+      .setLabel('Not guilty')
       .setStyle(ButtonStyle.Success),
     new ButtonBuilder()
       .setCustomId(`court-vote:${item.id}:advertencia`)
-      .setLabel('Advertência')
+      .setLabel('Warning')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(`court-vote:${item.id}:timeout`)
@@ -1404,11 +1408,11 @@ async function postTribunalPanel(guild, item, user) {
       .setStyle(ButtonStyle.Primary),
     new ButtonBuilder()
       .setCustomId(`court-vote:${item.id}:expulso`)
-      .setLabel('Expulso')
+      .setLabel('Kicked')
       .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(`court-vote:${item.id}:banido`)
-      .setLabel('Banido')
+      .setLabel('Banned')
       .setStyle(ButtonStyle.Danger),
   );
   const history = (item.messageHistory ?? [])
@@ -1422,11 +1426,11 @@ async function postTribunalPanel(guild, item, user) {
     embeds: [
       new EmbedBuilder()
         .setColor(0xed4245)
-        .setTitle(`⚖️ Caso ${item.id}`)
+        .setTitle(`⚖️ Case ${item.id}`)
         .setDescription(
-          `**Acusado:** ${user}\n**Tipo:** ${item.type}\n**Prova:** ${item.evidence || '—'}\n\n**Histórico recente**\n${history || 'Sem mensagens anteriores.'}`,
+          `**Accused:** ${user}\n**Type:** ${item.type}\n**Evidence:** ${item.evidence || '—'}\n\n**Recent history**\n${history || 'No previous messages.'}`,
         )
-        .setFooter({ text: 'O acusado precisa pedir julgamento antes da votação.' })
+        .setFooter({ text: 'The accused must request a hearing before voting starts.' })
         .setTimestamp(),
     ],
     components: [row],
@@ -1437,13 +1441,13 @@ async function sendVerificationDm(member) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`verify:new-member:${member.guild.id}`)
-      .setLabel('Confirmar que sou humano')
+      .setLabel('Confirm I am human')
       .setEmoji('🦆')
       .setStyle(ButtonStyle.Success),
   );
   await member
     .send({
-      content: `O servidor **${member.guild.name}** está protegido contra raids. Confirme sua entrada para remover a restrição:`,
+      content: `Server **${member.guild.name}** is protected against raids. Confirm your membership to remove the restriction:`,
       components: [row],
     })
     .catch(() => null);
@@ -1454,17 +1458,17 @@ function eventLabel(type) {
     {
       warning_created: 'Warning aplicado',
       warning_revoked: 'Warning removido',
-      tribunal_created: 'Caso aberto',
-      tribunal_closed: 'Caso julgado',
-      member_banned: 'Banimento',
-      member_unbanned: 'Desbanimento',
-      message_edit: 'Mensagem editada',
-      message_delete: 'Mensagem apagada',
-      member_roles: 'Cargos alterados',
-      nickname_change: 'Apelido alterado',
-      report_created: 'Denúncia recebida',
-      member_join: 'Entrada no servidor',
-      member_leave: 'Saída do servidor',
+      tribunal_created: 'Case opened',
+      tribunal_closed: 'Case decided',
+      member_banned: 'Ban',
+      member_unbanned: 'Unban',
+      message_edit: 'Message edited',
+      message_delete: 'Message deleted',
+      member_roles: 'Roles changed',
+      nickname_change: 'Nickname changed',
+      report_created: 'Report received',
+      member_join: 'Server join',
+      member_leave: 'Server departure',
     }[type] ?? type
   );
 }
@@ -1484,7 +1488,7 @@ async function sendWarningDm(user, guild, warning, activeCount) {
           .setColor(0xfee75c)
           .setTitle(`⚠️ Aviso em ${guild.name}`)
           .setDescription(
-            `Sua mensagem foi removida ou a equipe emitiu um aviso.\n\n**Motivo:** ${warning.reason}`,
+            `Your message was removed or a moderator issued a warning.\n\n**Reason:** ${warning.reason}`,
           )
           .addFields(
             { name: 'Aviso', value: warning.id, inline: true },
@@ -1493,7 +1497,7 @@ async function sendWarningDm(user, guild, warning, activeCount) {
           .setFooter({
             text:
               activeCount >= threshold
-                ? 'O caso foi escalado para o tribunal.'
+                ? 'The case was escalated to the tribunal.'
                 : `${threshold} warnings ativos escalam o caso.`,
           })
           .setTimestamp(),

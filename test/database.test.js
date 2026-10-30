@@ -16,14 +16,14 @@ test.beforeEach(() => {
   db.prepare('DELETE FROM settings WHERE guild_id=?').run(guildId);
 });
 
-test('mescla configurações do servidor com os padrões', () => {
+test('merges server settings with defaults', () => {
   updateSettings(guildId, { automodLevel: 'rigido' });
   const settings = getSettings(guildId);
   assert.equal(settings.automodLevel, 'rigido');
   assert.equal(settings.warningThreshold, 3);
 });
 
-test('registra e revoga warning persistente', async () => {
+test('persists and revokes warnings', async () => {
   const { warning, activeCount } = await addWarning({
     guildId,
     userId,
@@ -36,7 +36,7 @@ test('registra e revoga warning persistente', async () => {
   assert.equal(activeWarnings(guildId, userId).length, 0);
 });
 
-test('caso aceita fila, voto e veredito', async () => {
+test('supports case queuing, votes and verdicts', async () => {
   const item = await createCase({ guildId, userId, type: 'spam' });
   await joinQueue(item.id, userId);
   const votes = await voteCase(item.id, 'judge', 'inocente', 'ok');

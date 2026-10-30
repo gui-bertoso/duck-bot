@@ -18,26 +18,26 @@ export function inspectMessage(message, environmentDomains = []) {
   history.push({ time: now, content: message.content });
   recent.set(key, history);
   if (history.length >= rules.messages)
-    return violation('spam', 'muitas mensagens em poucos segundos', 2);
+    return violation('spam', 'too many messages in a few seconds', 2);
   if (
     message.content.length >= 4 &&
     history.filter((e) => e.content === message.content).length >= rules.repeats
   )
-    return violation('spam', 'mensagem repetida', 2);
+    return violation('spam', 'repeated message', 2);
   if (message.mentions.users.size + message.mentions.roles.size >= rules.mentions)
-    return violation('menções', 'excesso de menções', 2);
+    return violation('mentions', 'excessive mentions', 2);
   if ((message.content.match(/<a?:\w+:\d+>/g) ?? []).length >= rules.emojis)
-    return violation('emoji', 'excesso de emojis', 1);
+    return violation('emoji', 'excessive emojis', 1);
   if (/discord(?:app)?\.com\/invite\/|discord\.gg\//i.test(message.content))
-    return violation('convite', 'convite de outro servidor', 2);
+    return violation('convite', 'invite to another server', 2);
   const domains = [...environmentDomains, ...settings.allowedDomains].map((d) => d.toLowerCase());
   for (const raw of message.content.match(/https?:\/\/[^\s<]+/gi) ?? []) {
     try {
       const host = new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
       if (!domains.some((d) => host === d || host.endsWith(`.${d}`)))
-        return violation('link', `domínio desconhecido: ${host}`, 2);
+        return violation('link', `unknown domain: ${host}`, 2);
     } catch {
-      return violation('link', 'link inválido', 2);
+      return violation('link', 'invalid link', 2);
     }
   }
   return null;

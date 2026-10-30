@@ -17,7 +17,7 @@ test.beforeEach(() => {
   db.prepare('DELETE FROM settings WHERE guild_id=?').run(guildId);
 });
 
-test('mantém o histórico de mensagens após sair da memória do evento', () => {
+test('persists message history beyond the event lifetime', () => {
   updateSettings(guildId, { messageHistoryEnabled: true, messageRetentionDays: 30 });
   rememberMessage({
     id: 'message-1',
@@ -33,7 +33,7 @@ test('mantém o histórico de mensagens após sair da memória do evento', () =>
   assert.equal(history[0].content, 'mensagem usada como evidência');
 });
 
-test('escala punições conforme a pontuação configurada', () => {
+test('escalates sanctions using the configured score', () => {
   const violation = { type: 'spam', severity: 2 };
   assert.equal(decideAutomaticAction({ points: 1, violation, threshold: 3 }).type, 'warning');
   assert.equal(decideAutomaticAction({ points: 3, violation, threshold: 3 }).minutes, 10);
@@ -48,8 +48,8 @@ test('escala punições conforme a pontuação configurada', () => {
   );
 });
 
-test('impede o acusado de votar no próprio tribunal', async () => {
+test('prevents the accused from voting on their own case', async () => {
   const item = await createCase({ guildId, userId, type: 'spam' });
   await joinQueue(item.id, userId);
-  await assert.rejects(() => voteCase(item.id, userId, 'inocente', 'autovoto'), /próprio caso/);
+  await assert.rejects(() => voteCase(item.id, userId, 'inocente', 'autovoto'), /their own case/);
 });

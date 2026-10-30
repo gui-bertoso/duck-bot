@@ -7,37 +7,55 @@ import {
   PermissionFlagsBits,
 } from 'discord.js';
 
+const legacyRoleNames = {
+  Visitor: 'Visitante',
+  Member: 'Membro',
+  Streams: 'Lives',
+  Games: 'Jogos',
+  Events: 'Eventos',
+  'YouTube Member': 'Membro YouTube',
+  'YouTube Subscriber': 'Inscrito YouTube',
+};
+
+export function findRole(guild, name) {
+  return guild.roles.cache.find(
+    (role) => role.name === name || role.name === legacyRoleNames[name],
+  );
+}
+
 const roleDefinitions = [
-  { name: 'Visitante', color: 0x99aab5 },
-  { name: 'Membro', color: 0x57f287 },
-  { name: 'Lives', color: 0x9146ff, emoji: '📺', slug: 'lives' },
-  { name: 'Jogos', color: 0x5865f2, emoji: '🎮', slug: 'jogos' },
-  { name: 'Eventos', color: 0xfee75c, emoji: '🎉', slug: 'eventos' },
+  { name: 'Visitor', color: 0x99aab5 },
+  { name: 'Member', color: 0x57f287 },
+  { name: 'Streams', color: 0x9146ff, emoji: '📺', slug: 'lives' },
+  { name: 'Games', color: 0x5865f2, emoji: '🎮', slug: 'jogos' },
+  { name: 'Events', color: 0xfee75c, emoji: '🎉', slug: 'eventos' },
   { name: 'Twitch Sub', color: 0x9146ff },
-  { name: 'Membro YouTube', color: 0xff0000 },
-  { name: 'Inscrito YouTube', color: 0xff6666 },
+  { name: 'YouTube Member', color: 0xff0000 },
+  { name: 'YouTube Subscriber', color: 0xff6666 },
 ];
 
 export async function setupOnboarding(guild, { format = 'compacto', cleanup = false } = {}) {
   const roles = {};
   for (const definition of roleDefinitions) {
     roles[definition.name] =
-      guild.roles.cache.find((role) => role.name === definition.name) ??
+      findRole(guild, definition.name) ??
       (await guild.roles.create({
         name: definition.name,
         color: definition.color,
-        reason: 'Setup inicial do Duck Bot',
+        reason: 'Initial Duck Bot setup',
       }));
   }
   const category =
     guild.channels.cache.find(
-      (channel) => channel.name === 'COMECE AQUI' && channel.type === ChannelType.GuildCategory,
+      (channel) =>
+        ['START HERE', 'COMECE AQUI'].includes(channel.name) &&
+        channel.type === ChannelType.GuildCategory,
     ) ??
     (await guild.channels.create({
-      name: 'COMECE AQUI',
+      name: 'START HERE',
       type: ChannelType.GuildCategory,
       position: 0,
-      reason: 'Setup inicial do Duck Bot',
+      reason: 'Initial Duck Bot setup',
     }));
   const readOnly = [
     {
@@ -51,8 +69,8 @@ export async function setupOnboarding(guild, { format = 'compacto', cleanup = fa
     rules = await ensureChannel(
       guild,
       category,
-      'comece-aqui',
-      'Regras, verificação e escolha de interesses.',
+      'start-here',
+      'Rules, verification and interest selection.',
       readOnly,
     );
     rolesChannel = rules;
@@ -63,22 +81,16 @@ export async function setupOnboarding(guild, { format = 'compacto', cleanup = fa
     rules = await ensureChannel(
       guild,
       category,
-      'regras',
-      'Leia e aceite as regras para liberar seu acesso.',
+      'rules',
+      'Read and accept the rules to unlock access.',
       readOnly,
     );
-    welcome = await ensureChannel(
-      guild,
-      category,
-      'boas-vindas',
-      'Novos membros da comunidade.',
-      readOnly,
-    );
+    welcome = await ensureChannel(guild, category, 'welcome', 'New community members.', readOnly);
     rolesChannel = await ensureChannel(
       guild,
       category,
-      'escolha-cargos',
-      'Escolha os assuntos que deseja acompanhar.',
+      'choose-roles',
+      'Choose the topics you want to follow.',
       readOnly,
     );
     await replaceBotPanels(rules, 'onboarding-rules', rulesPanel(guild));
@@ -90,35 +102,35 @@ export async function setupOnboarding(guild, { format = 'compacto', cleanup = fa
 }
 
 export async function addVisitorRole(member) {
-  const role = member.guild.roles.cache.find((item) => item.name === 'Visitante');
+  const role = findRole(member.guild, 'Visitor');
   if (role && member.manageable && !member.roles.cache.has(role.id))
-    await member.roles.add(role, 'Novo membro aguardando regras');
+    await member.roles.add(role, 'New member awaiting rule acceptance');
 }
 
 export async function acceptRules(guild, userId) {
   const member = await guild.members.fetch(userId);
-  const visitor = guild.roles.cache.find((role) => role.name === 'Visitante');
-  const memberRole = guild.roles.cache.find((role) => role.name === 'Membro');
-  if (!memberRole) throw new Error('O cargo Membro não existe. Execute /setup-inicial.');
+  const visitor = findRole(guild, 'Visitor');
+  const memberRole = findRole(guild, 'Member');
+  if (!memberRole) throw new Error('The Member role does not exist. Run /setup.');
   if (member.id === guild.ownerId || member.permissions.has(PermissionFlagsBits.ManageGuild))
     return { member, bypassed: true };
-  if (!member.manageable) throw new Error('Meu cargo precisa ficar acima dos cargos deste membro.');
-  if (!member.roles.cache.has(memberRole.id)) await member.roles.add(memberRole, 'Regras aceitas');
+  if (!member.manageable) throw new Error('My role must be above this member roles.');
+  if (!member.roles.cache.has(memberRole.id)) await member.roles.add(memberRole, 'Rules accepted');
   if (visitor && member.roles.cache.has(visitor.id))
-    await member.roles.remove(visitor, 'Regras aceitas');
+    await member.roles.remove(visitor, 'Rules accepted');
   return { member, bypassed: false };
 }
 
 export async function toggleInterestRole(guild, userId, slug) {
   const definition = roleDefinitions.find((item) => item.slug === slug);
-  if (!definition) throw new Error('Cargo de interesse inválido.');
+  if (!definition) throw new Error('Invalid interest role.');
   const member = await guild.members.fetch(userId);
-  const role = guild.roles.cache.find((item) => item.name === definition.name);
-  if (!role) throw new Error('Cargo não encontrado. Execute /setup-inicial.');
+  const role = findRole(guild, definition.name);
+  if (!role) throw new Error('Role not found. Run /setup.');
   const removing = member.roles.cache.has(role.id);
   await (removing
-    ? member.roles.remove(role, 'Escolha de interesses')
-    : member.roles.add(role, 'Escolha de interesses'));
+    ? member.roles.remove(role, 'Interest selection')
+    : member.roles.add(role, 'Interest selection'));
   return { role, added: !removing };
 }
 
@@ -126,7 +138,7 @@ function rulesPanel(guild) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`onboarding:accept:${guild.id}`)
-      .setLabel('Li e aceito as regras')
+      .setLabel('I have read and accept the rules')
       .setEmoji('✅')
       .setStyle(ButtonStyle.Success),
   );
@@ -134,21 +146,21 @@ function rulesPanel(guild) {
     embeds: [
       new EmbedBuilder()
         .setColor(0xf4c430)
-        .setTitle(`🦆 Bem-vindo à ${guild.name}`)
+        .setTitle(`🦆 Welcome to ${guild.name}`)
         .setDescription(
           [
-            'Para conviver bem com a comunidade:',
+            'To keep the community welcoming:',
             '',
-            '1. Respeite todos os membros.',
-            '2. Não faça spam nem divulgue golpes.',
-            '3. Use cada canal para o assunto indicado.',
-            '4. Conteúdo ofensivo ou ilegal não é permitido.',
-            '5. Siga as orientações da moderação.',
+            '1. Respect every member.',
+            '2. Do not spam or promote scams.',
+            '3. Use each channel for its intended topic.',
+            '4. Offensive or illegal content is not allowed.',
+            '5. Follow moderator instructions.',
             '',
-            'Clique abaixo para confirmar e receber o cargo **Membro**.',
+            'Click below to confirm and receive the **Member** role.',
           ].join('\n'),
         )
-        .setFooter({ text: 'Ao confirmar, você concorda com as regras do servidor.' }),
+        .setFooter({ text: 'By confirming, you agree to the server rules.' }),
     ],
     components: [row],
   };
@@ -169,9 +181,9 @@ function rolesPanel(guild) {
     embeds: [
       new EmbedBuilder()
         .setColor(0x5865f2)
-        .setTitle('Escolha seus interesses')
+        .setTitle('Choose your interests')
         .setDescription(
-          'Use os botões para adicionar ou remover cargos. Eles poderão ser usados para avisar sobre lives, jogos e eventos sem mencionar todo mundo.',
+          'Use the buttons to add or remove roles. These roles may be used for stream, game and event notifications without mentioning everyone.',
         ),
     ],
     components: [row],
@@ -180,7 +192,16 @@ function rolesPanel(guild) {
 async function ensureChannel(guild, parent, name, topic, permissionOverwrites) {
   return (
     guild.channels.cache.find(
-      (channel) => channel.name === name && channel.type === ChannelType.GuildText,
+      (channel) =>
+        (channel.name === name ||
+          channel.name ===
+            {
+              'start-here': 'comece-aqui',
+              rules: 'regras',
+              welcome: 'boas-vindas',
+              'choose-roles': 'escolha-cargos',
+            }[name]) &&
+        channel.type === ChannelType.GuildText,
     ) ??
     guild.channels.create({
       name,
@@ -188,7 +209,7 @@ async function ensureChannel(guild, parent, name, topic, permissionOverwrites) {
       parent,
       topic,
       permissionOverwrites,
-      reason: 'Setup inicial do Duck Bot',
+      reason: 'Initial Duck Bot setup',
     })
   );
 }
@@ -220,19 +241,19 @@ async function organizePrivateChannels(guild) {
     if (channel && channel.parentId !== area.id)
       await channel.setParent(area, {
         lockPermissions: false,
-        reason: 'Organização compacta do Duck Bot',
+        reason: 'Compact Duck Bot layout',
       });
   }
 }
 async function cleanupLegacyChannels(guild, keepIds) {
-  const names = new Set(['regras', 'boas-vindas', 'escolha-cargos', 'comandos-bot']);
+  const names = new Set(['rules', 'welcome', 'choose-roles', 'comandos-bot']);
   const targets = guild.channels.cache.filter(
     (channel) => names.has(channel.name) && !keepIds.includes(channel.id),
   );
   const removed = [];
   for (const channel of targets.values()) {
     removed.push(channel.name);
-    await channel.delete('Limpeza confirmada no setup compacto');
+    await channel.delete('Cleanup confirmed in compact setup');
   }
   return removed;
 }

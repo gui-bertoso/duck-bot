@@ -37,10 +37,10 @@ export function initializeTerminal() {
   const line = '═'.repeat(width);
 
   console.log(`${colors.cyan}╔${line}╗`);
-  console.log(`║${center('🦆  DUCK BOT — CENTRAL DE OPERAÇÕES', width)}║`);
-  console.log(`║${center('Moderação • Segurança • Tribunal • Auditoria', width)}║`);
+  console.log(`║${center('🦆  DUCK BOT — OPERATIONS CENTER', width)}║`);
+  console.log(`║${center('Moderation • Security • Tribunal • Audit', width)}║`);
   console.log(`╚${line}╝${colors.reset}`);
-  console.log(`${colors.dim}Inicializando serviços do bot...${colors.reset}\n`);
+  console.log(`${colors.dim}Starting bot services...${colors.reset}\n`);
 }
 
 export function terminalLog(level, message, error, context = {}) {
